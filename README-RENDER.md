@@ -1,12 +1,3 @@
-# Buffalo.fm Highlight Renderer — Render.com
+# Buffalo.fm Highlight Renderer - field beta v0.1.1
 
-Deploy this folder as a Render Web Service.
-
-Recommended Render settings:
-- Runtime: Docker
-- Root directory: leave blank if this folder is repository root
-- Health check path: /health
-- Environment variables: none required for basic beta
-
-The app listens on process.env.PORT and binds to 0.0.0.0.
-FFmpeg and FFprobe are installed by the Dockerfile.
+Render-ready Docker service. This field-beta build uses 720x1280 output, single-threaded FFmpeg encoding, extended upload timeouts, and verbose request/render logging to fit the Render Free instance more reliably.

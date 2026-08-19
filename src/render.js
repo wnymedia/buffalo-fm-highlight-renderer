@@ -4,8 +4,8 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import { probe, run } from './media.js';
 
-const WIDTH = 1080;
-const HEIGHT = 1920;
+const WIDTH = 720;
+const HEIGHT = 1280;
 const FPS = 30;
 const TARGET_SECONDS = 30;
 const FONT = process.env.FONT_FILE || '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
@@ -28,7 +28,7 @@ async function makeSegment(item, outputPath, seconds) {
       '-t', String(seconds),
       '-an',
       '-vf', `scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,crop=${WIDTH}:${HEIGHT},fps=${FPS},format=yuv420p`,
-      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
+      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-threads', '1',
       outputPath,
     ]);
   } else {
@@ -37,7 +37,7 @@ async function makeSegment(item, outputPath, seconds) {
       '-t', String(seconds),
       '-an',
       '-vf', `scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,crop=${WIDTH}:${HEIGHT},fps=${FPS},format=yuv420p`,
-      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22',
+      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-threads', '1',
       outputPath,
     ]);
   }
@@ -89,7 +89,7 @@ export async function renderHighlight({ mediaItems, sourcePath, outputDir, artis
   await run('ffmpeg', [
     '-y', '-i', withAudio,
     '-vf', vf,
-    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21',
+    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-threads', '1',
     '-c:a', 'copy', '-movflags', '+faststart',
     outPath,
   ]);

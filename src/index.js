@@ -24,7 +24,11 @@ const upload = multer({
 });
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: true }));
+app.use((req, _res, next) => {
+  console.log(`[HTTP] ${req.method} ${req.path} content-length=${req.headers['content-length'] || 'unknown'}`);
+  next();
+});
 app.use('/output', express.static(outputDir));
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'buffalofm-highlight-api' }));
@@ -54,6 +58,7 @@ app.post(
     { name: 'media', maxCount: 20 },
   ]),
   async (req, res) => {
+    console.log('[GENERATE] upload received');
     const source = req.files?.source?.[0];
     const media = req.files?.media || [];
     const allTemp = [...(source ? [source] : []), ...media];
@@ -63,11 +68,13 @@ app.post(
       if (!media.length) return res.status(400).json({ error: 'Add at least one photo or video for the montage.' });
 
       // Authoritative server-side gate. Even a modified client cannot bypass this.
+      console.log(`[GENERATE] source=${source.originalname} media=${media.length}`);
       const validation = await validateAudioSource(source.path, 30);
       if (!validation.valid) {
         return res.status(422).json({ error: validation.message || 'Audio source does not qualify.' });
       }
 
+      console.log('[GENERATE] validation passed; starting ffmpeg render');
       const rendered = await renderHighlight({
         mediaItems: media.map((m) => ({ path: m.path, mimetype: m.mimetype, originalname: m.originalname })),
         sourcePath: source.path,
@@ -78,6 +85,7 @@ app.post(
         style: req.body.style,
       });
 
+      console.log(`[GENERATE] render complete: ${rendered.outName}`);
       res.json({
         ok: true,
         duration: 30,
@@ -92,7 +100,18 @@ app.post(
   }
 );
 
+app.use((err, _req, res, _next) => {
+  console.error('[HTTP ERROR]', err);
+  if (!res.headersSent) res.status(500).json({ error: err?.message || 'Upload/render request failed.' });
+});
+
+process.on('uncaughtException', (err) => console.error('[UNCAUGHT]', err));
+process.on('unhandledRejection', (err) => console.error('[UNHANDLED REJECTION]', err));
+
 const port = Number(process.env.PORT || 8787);
-app.listen(port, '0.0.0.0', () => {
+const server = app.listen(port, '0.0.0.0', () => {
   console.log(`Buffalo.fm Highlight API listening on http://0.0.0.0:${port}`);
 });
+server.requestTimeout = 30 * 60 * 1000;
+server.headersTimeout = 120000;
+server.keepAliveTimeout = 120000;
